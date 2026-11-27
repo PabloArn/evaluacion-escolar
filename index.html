@@ -240,11 +240,11 @@
             </select>
 
             <button id="btnRefreshCloud" type="button" class="px-3.5 py-2 rounded-xl bg-[#1c2b64] hover:bg-[#15214f] text-white text-xs font-semibold transition flex items-center gap-1.5">
-              <span>🔄 Sincronizar</span>
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg><span>Sincronizar</span>
             </button>
 
             <button id="btnExportCSV" type="button" class="px-3.5 py-2 rounded-xl bg-[#f96a0e] hover:bg-[#e05b07] text-white text-xs font-semibold transition flex items-center gap-1.5">
-              <span>📥 Exportar Excel</span>
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Exportar Excel</span>
             </button>
 
             <button id="btnLogout" type="button" class="px-3 py-2 rounded-xl border border-slate-300 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-semibold transition">
@@ -295,13 +295,13 @@
         <div class="border-b border-slate-200 no-print">
           <nav class="flex flex-wrap gap-2">
             <button type="button" data-dash-tab="ranking" class="dash-tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-[#f96a0e] text-[#1c2b64] bg-white">
-              🏆 Ranking de Mejores Evaluados y Perfiles
+              <span class="inline-flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Ranking de Mejores Evaluados y Perfiles</span>
             </button>
             <button type="button" data-dash-tab="qrs" class="dash-tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-[#1c2b64]">
-              🖨️ Catálogo de Personal y Códigos QR
+              <span class="inline-flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4v4h-4z"/><path d="M14 20h1"/><path d="M20 14h1"/></svg>Catálogo de Personal y Códigos QR</span>
             </button>
             <button type="button" data-dash-tab="bitacora" class="dash-tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-[#1c2b64]">
-              💬 Bitácora Completa de Evaluaciones
+              <span class="inline-flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Bitácora Completa de Evaluaciones</span>
             </button>
           </nav>
         </div>
@@ -394,7 +394,7 @@
               <div class="flex items-center justify-between mb-2">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-[#1c2b64]">Comentarios de Alumnos</h4>
                 <button id="btnTestWorkerQR" type="button" class="text-[11px] text-[#f96a0e] hover:underline font-semibold">
-                  📱 Abrir encuesta QR →
+                  Abrir encuesta QR →
                 </button>
               </div>
               <div id="profileCommentsList" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
@@ -449,7 +449,7 @@
               </div>
             </div>
             <button id="btnPrintAllQRs" type="button" class="px-4 py-2 rounded-xl bg-[#f96a0e] hover:bg-[#e05b07] text-white text-xs font-semibold transition shadow-sm">
-              🖨️ Imprimir Tarjetas QR
+              <span class="inline-flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir Tarjetas QR</span>
             </button>
           </div>
 
@@ -538,7 +538,7 @@
       const toast = document.getElementById("toastContainer");
       const icon = document.getElementById("toastIcon");
       const text = document.getElementById("toastMessage");
-      icon.textContent = isError ? "⚠️" : "✓";
+      icon.textContent = isError ? "!" : "✓";
       icon.className = isError ? "text-amber-400 font-bold" : "text-[#f96a0e] font-bold";
       text.textContent = msg;
       toast.classList.remove("hidden");
@@ -688,7 +688,7 @@
       const tbody = document.getElementById("rankingTableBody");
       tbody.innerHTML = stats.map((w, idx) => {
         const isSelected = w.id === state.selectedProfileWorkerId;
-        const medal = idx === 0 ? "🥇 1°" : idx === 1 ? "🥈 2°" : idx === 2 ? "🥉 3°" : `${idx + 1}°`;
+        const medal = idx === 0 ? `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#f96a0e] text-white text-[11px] font-bold">1°</span>` : idx === 1 ? `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#1c2b64] text-white text-[11px] font-bold">2°</span>` : idx === 2 ? `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-600 text-white text-[11px] font-bold">3°</span>` : `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold">${idx + 1}°</span>`;
         const badgeColor = w.avgGlobal >= 4.5
           ? "bg-emerald-100 text-emerald-800"
           : w.avgGlobal >= 3.8
@@ -835,7 +835,7 @@
             <div id="qrBox_${p.id}" class="p-3 bg-white border border-slate-200 rounded-xl my-1 flex items-center justify-center"></div>
             <p class="text-[10px] font-mono text-slate-400 break-all mt-2 px-2">${qrUrl}</p>
             <button type="button" data-simulate-qr="${p.id}" class="mt-3 w-full py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#1c2b64] hover:text-white text-[#1c2b64] text-xs font-semibold transition no-print">
-              📱 Probar encuesta QR
+              Probar encuesta QR →
             </button>
           </div>
         `;
