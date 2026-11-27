@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Universidad Calmecac — Sistema de Evaluación de Atención</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --calmecac-blue: #1c2b64;
+      --calmecac-orange: #f96a0e;
+    }
+    body { font-family: 'Inter', sans-serif; background-color: #f4f6fa; }
+    .star-btn { transition: transform 0.12s ease, background-color 0.12s ease, border-color 0.12s ease; }
+    .star-btn:hover { transform: scale(1.06); }
+    @media print {
+      .no-print { display: none !important; }
+      body { background-color: #ffffff; }
+    }
+  </style>
+</head>
+<body class="text-slate-900 min-h-screen flex flex-col">
+
+  <!-- LÍNEA INSTITUCIONAL SUPERIOR -->
+  <div class="h-1.5 w-full bg-[#f96a0e] no-print"></div>
+
+  <!-- NOTIFICACIÓN TOAST -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 hidden max-w-sm bg-[#1c2b64] text-white px-4 py-3 rounded-xl shadow-2xl border border-white/15 flex items-center gap-3 text-sm no-print">
+    <span id="toastIcon" class="text-[#f96a0e] font-bold">✓</span>
+    <span id="toastMessage">Operación exitosa</span>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- VISTA 1: FORMULARIO DEL ALUMNO (CUANDO ESCANEA UN QR: ?id=SEC-01)   -->
+  <!-- =================================================================== -->
+  <main id="studentView" class="hidden flex-1 flex flex-col items-center justify-center p-4 sm:p-6">
+    <!-- Botón discreto solo visible si un directivo abrió la encuesta desde el Panel -->
+    <div id="adminPreviewBanner" class="hidden w-full max-w-md mb-3 flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs shadow-sm no-print">
+      <span class="text-slate-600">Vista previa de encuesta QR</span>
+      <button id="btnReturnToAdmin" type="button" class="font-semibold text-[#1c2b64] hover:text-[#f96a0e] transition">
+        ← Volver al Panel Directivo
+      </button>
+    </div>
+
+    <!-- Tarjeta principal de Evaluación Móvil -->
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden">
+      <!-- Encabezado institucional con el trabajador BLOQUEADO -->
+      <div class="bg-[#1c2b64] p-5 text-white border-b-4 border-[#f96a0e]">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none">
+                <path d="M12 2L4 5.5V11.5C4 16.5 7.4 21.1 12 22.5C16.6 21.1 20 16.5 20 11.5V5.5L12 2Z" stroke="#ffffff" stroke-width="1.6" fill="#1c2b64"/>
+                <path d="M12 6.5C13.2 8.2 13.8 9.6 13.8 10.8C13.8 11.9 13 12.8 12 12.8C11 12.8 10.2 11.9 10.2 10.8C10.2 9.6 10.8 8.2 12 6.5Z" fill="#f96a0e"/>
+              </svg>
+            </div>
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-widest text-[#f96a0e] block leading-none">Universidad Calmecac</span>
+              <span class="text-xs text-slate-200">Evaluación de Atención y Servicio</span>
+            </div>
+          </div>
+          <span id="studentWorkerIdBadge" class="bg-white/15 px-2.5 py-0.5 rounded-md font-mono text-[11px] font-semibold">SEC-01</span>
+        </div>
+
+        <div class="flex items-center gap-3.5 mt-2 bg-white/10 rounded-xl p-3 border border-white/10">
+          <div id="studentWorkerAvatar" class="w-12 h-12 rounded-full bg-[#f96a0e] text-white flex items-center justify-center text-base font-bold shrink-0 shadow">
+            LH
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] text-slate-300">Estás evaluando a:</p>
+            <h1 id="studentWorkerName" class="text-base font-bold truncate">Laura Hernández Gómez</h1>
+            <p id="studentWorkerRoleArea" class="text-xs text-slate-200 truncate">Secretaria • Ventanilla de Trámites</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cuerpo del Formulario -->
+      <form id="evaluationForm" class="p-5 space-y-5">
+        <!-- 1. Tipo de trámite -->
+        <div>
+          <label for="inputTramite" class="block text-xs font-semibold uppercase tracking-wider text-[#1c2b64] mb-2">
+            1. ¿Qué trámite o atención realizaste? <span class="text-[#f96a0e]">*</span>
+          </label>
+          <select id="inputTramite" required class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1c2b64]">
+            <option value="Constancia / Kárdex">Constancia / Kárdex / Certificados</option>
+            <option value="Inscripción / Horarios">Inscripción / Altas y Bajas / Horarios</option>
+            <option value="Asesoría Académica / Tutoría">Asesoría Académica / Tutoría</option>
+            <option value="Titulación / Servicio Social">Titulación / Servicio Social</option>
+            <option value="Entrega o Recepción de Documentos">Entrega o Recepción de Documentos</option>
+            <option value="Otro trámite escolar">Otro trámite o consulta</option>
+          </select>
+        </div>
+
+        <!-- 2. Calificación: Trato y Amabilidad -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="text-xs font-semibold text-slate-700">2. Trato y amabilidad recibida <span class="text-[#f96a0e]">*</span></label>
+            <span id="labelScoreTrato" class="text-xs font-bold text-[#1c2b64]">5 / 5 Excelente</span>
+          </div>
+          <div class="flex items-center justify-between gap-1.5 pt-1" data-rating-group="trato">
+            <button type="button" data-val="1" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">1 ★</button>
+            <button type="button" data-val="2" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">2 ★</button>
+            <button type="button" data-val="3" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">3 ★</button>
+            <button type="button" data-val="4" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">4 ★</button>
+            <button type="button" data-val="5" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">5 ★</button>
+          </div>
+        </div>
+
+        <!-- 3. Calificación: Claridad en la información -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="text-xs font-semibold text-slate-700">3. Claridad en la información y solución <span class="text-[#f96a0e]">*</span></label>
+            <span id="labelScoreClaridad" class="text-xs font-bold text-[#1c2b64]">5 / 5 Excelente</span>
+          </div>
+          <div class="flex items-center justify-between gap-1.5 pt-1" data-rating-group="claridad">
+            <button type="button" data-val="1" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">1 ★</button>
+            <button type="button" data-val="2" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">2 ★</button>
+            <button type="button" data-val="3" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">3 ★</button>
+            <button type="button" data-val="4" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">4 ★</button>
+            <button type="button" data-val="5" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">5 ★</button>
+          </div>
+        </div>
+
+        <!-- 4. Calificación: Rapidez y tiempo de atención -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="text-xs font-semibold text-slate-700">4. Tiempo de espera y agilidad <span class="text-[#f96a0e]">*</span></label>
+            <span id="labelScoreRapidez" class="text-xs font-bold text-[#1c2b64]">5 / 5 Excelente</span>
+          </div>
+          <div class="flex items-center justify-between gap-1.5 pt-1" data-rating-group="rapidez">
+            <button type="button" data-val="1" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">1 ★</button>
+            <button type="button" data-val="2" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">2 ★</button>
+            <button type="button" data-val="3" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">3 ★</button>
+            <button type="button" data-val="4" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">4 ★</button>
+            <button type="button" data-val="5" class="star-btn flex-1 py-2 rounded-lg border text-sm font-bold">5 ★</button>
+          </div>
+        </div>
+
+        <!-- 5. Comentario opcional -->
+        <div>
+          <label for="inputComentario" class="block text-xs font-semibold uppercase tracking-wider text-[#1c2b64] mb-1.5">
+            5. Comentario o sugerencia (Opcional)
+          </label>
+          <textarea id="inputComentario" rows="2" placeholder="Escribe brevemente cómo fue tu experiencia..." class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1c2b64]"></textarea>
+        </div>
+
+        <button id="btnSubmitEval" type="submit" class="w-full py-3 px-4 rounded-xl bg-[#1c2b64] hover:bg-[#15214f] text-white font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 border-b-2 border-[#f96a0e]">
+          <span>Enviar Evaluación Anónima</span>
+        </button>
+      </form>
+
+      <!-- Pantalla de agradecimiento tras enviar -->
+      <div id="studentThankYou" class="hidden p-8 text-center space-y-4">
+        <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-2xl font-bold">
+          ✓
+        </div>
+        <h2 class="text-xl font-bold text-[#1c2b64]">¡Muchas gracias por tu opinión!</h2>
+        <p class="text-sm text-slate-600">
+          Tu evaluación para <strong id="thankYouWorkerName" class="text-slate-900"></strong> se registró correctamente. En la Universidad Calmecac trabajamos continuamente para brindarte un mejor servicio.
+        </p>
+        <div class="pt-2">
+          <button id="btnResetForm" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">
+            Realizar otra evaluación
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-[11px] text-slate-400 mt-4 text-center">Universidad Calmecac • Calidad y Atención Institucional</p>
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- VISTA 2: LOGIN Y PANEL DIRECTIVO (UNIVERSIDAD CALMECAC)             -->
+  <!-- =================================================================== -->
+  <section id="adminSection" class="flex-1 flex flex-col">
+
+    <!-- SUB-VISTA 2A: PANTALLA DE LOGIN INSTITUCIONAL -->
+    <div id="adminLoginView" class="flex-1 flex flex-col items-center justify-center p-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <div class="bg-[#1c2b64] px-6 py-5 text-white border-b-4 border-[#f96a0e] flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" class="w-6 h-6" fill="none">
+              <path d="M12 2L4 5.5V11.5C4 16.5 7.4 21.1 12 22.5C16.6 21.1 20 16.5 20 11.5V5.5L12 2Z" stroke="#ffffff" stroke-width="1.6" fill="#1c2b64"/>
+              <path d="M12 6.5C13.2 8.2 13.8 9.6 13.8 10.8C13.8 11.9 13 12.8 12 12.8C11 12.8 10.2 11.9 10.2 10.8C10.2 9.6 10.8 8.2 12 6.5Z" fill="#f96a0e"/>
+            </svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-widest text-[#f96a0e] block">Universidad Calmecac</span>
+            <h1 class="text-lg font-bold leading-tight">Portal de Evaluación de Calidad</h1>
+          </div>
+        </div>
+
+        <div class="p-6 sm:p-7">
+          <p class="text-xs text-slate-500 mb-5">Ingresa tus credenciales institucionales para consultar resultados, perfiles de desempeño y códigos QR.</p>
+
+          <form id="loginForm" class="space-y-4">
+            <div>
+              <label for="loginUser" class="block text-xs font-semibold text-[#1c2b64] mb-1.5">Usuario</label>
+              <input id="loginUser" type="text" required autocomplete="username" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1c2b64]" placeholder="Ingresa tu usuario" />
+            </div>
+            <div>
+              <label for="loginPass" class="block text-xs font-semibold text-[#1c2b64] mb-1.5">Contraseña</label>
+              <input id="loginPass" type="password" required autocomplete="current-password" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1c2b64]" placeholder="••••••••" />
+            </div>
+            <p id="loginErrorMsg" class="hidden text-xs text-rose-600 font-medium bg-rose-50 border border-rose-200 rounded-lg p-2.5"></p>
+
+            <button id="btnLoginSubmit" type="submit" class="w-full py-2.5 px-4 rounded-xl bg-[#1c2b64] hover:bg-[#15214f] text-white font-semibold text-sm transition shadow-md border-b-2 border-[#f96a0e]">
+              Ingresar al Sistema
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-slate-400 mt-5">Escuela de Estudios Superiores Calmecac • Xalapa | Coatepec | Perote</p>
+    </div>
+
+    <!-- SUB-VISTA 2B: DASHBOARD PRINCIPAL -->
+    <div id="adminDashboardView" class="hidden flex-1 flex flex-col">
+      <!-- Encabezado institucional blanco limpio (estilo web oficial Calmecac) -->
+      <header class="bg-white border-b border-slate-200 shadow-sm no-print sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-[#1c2b64] flex items-center justify-center shadow-sm shrink-0">
+              <svg viewBox="0 0 24 24" class="w-6 h-6" fill="none">
+                <path d="M12 2L4 5.5V11.5C4 16.5 7.4 21.1 12 22.5C16.6 21.1 20 16.5 20 11.5V5.5L12 2Z" stroke="#ffffff" stroke-width="1.6" fill="#1c2b64"/>
+                <path d="M12 6.5C13.2 8.2 13.8 9.6 13.8 10.8C13.8 11.9 13 12.8 12 12.8C11 12.8 10.2 11.9 10.2 10.8C10.2 9.6 10.8 8.2 12 6.5Z" fill="#f96a0e"/>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-base font-extrabold text-[#1c2b64] tracking-tight">UNIVERSIDAD CALMECAC</h1>
+                <span id="loggedRoleBadge" class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#f96a0e]/10 text-[#f96a0e] border border-[#f96a0e]/25">Director</span>
+              </div>
+              <p class="text-xs text-slate-500">
+                <span id="loggedUserName" class="font-medium text-slate-700">Dirección General</span> • Evaluación de Desempeño y Atención
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="filterRoleSelect" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1c2b64]">
+              <option value="ALL">Todos los puestos</option>
+              <option value="Secretaria">Solo Secretarias</option>
+              <option value="Académico">Solo Académicos</option>
+            </select>
+
+            <button id="btnRefreshCloud" type="button" class="px-3.5 py-2 rounded-xl bg-[#1c2b64] hover:bg-[#15214f] text-white text-xs font-semibold transition flex items-center gap-1.5">
+              <span>🔄 Sincronizar</span>
+            </button>
+
+            <button id="btnExportCSV" type="button" class="px-3.5 py-2 rounded-xl bg-[#f96a0e] hover:bg-[#e05b07] text-white text-xs font-semibold transition flex items-center gap-1.5">
+              <span>📥 Exportar Excel</span>
+            </button>
+
+            <button id="btnLogout" type="button" class="px-3 py-2 rounded-xl border border-slate-300 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-semibold transition">
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+        <!-- KPIs Globales -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 no-print">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-[#1c2b64]">
+            <p class="text-xs font-medium text-slate-500">Promedio General Institucional</p>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span id="kpiGlobalAvg" class="text-2xl font-extrabold text-[#1c2b64]">0.00</span>
+              <span class="text-xs font-bold text-[#f96a0e]">★ de 5.0</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Ponderado entre trato, claridad y rapidez</p>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-[#f96a0e]">
+            <p class="text-xs font-medium text-slate-500">Evaluaciones Recibidas</p>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span id="kpiTotalEvals" class="text-2xl font-extrabold text-[#1c2b64]">0</span>
+              <span class="text-xs text-slate-500">trámites evaluados</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Capturados vía código QR</p>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs font-medium text-slate-500">Mejor Evaluado Actual</p>
+            <p id="kpiTopWorkerName" class="text-sm font-bold text-[#1c2b64] truncate mt-1.5">—</p>
+            <p id="kpiTopWorkerScore" class="text-xs font-semibold text-[#f96a0e] mt-0.5">—</p>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs font-medium text-slate-500">Personal Activo con QR</p>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span id="kpiActiveWorkers" class="text-2xl font-extrabold text-[#1c2b64]">0</span>
+              <span class="text-xs text-slate-500">registrados</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Secretarias y Académicos</p>
+          </div>
+        </div>
+
+        <!-- Pestañas internas del Dashboard -->
+        <div class="border-b border-slate-200 no-print">
+          <nav class="flex flex-wrap gap-2">
+            <button type="button" data-dash-tab="ranking" class="dash-tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-[#f96a0e] text-[#1c2b64] bg-white">
+              🏆 Ranking de Mejores Evaluados y Perfiles
+            </button>
+            <button type="button" data-dash-tab="qrs" class="dash-tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-[#1c2b64]">
+              🖨️ Catálogo de Personal y Códigos QR
+            </button>
+            <button type="button" data-dash-tab="bitacora" class="dash-tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-[#1c2b64]">
+              💬 Bitácora Completa de Evaluaciones
+            </button>
+          </nav>
+        </div>
+
+        <!-- TAB 1: RANKING + PERFIL INDIVIDUAL DEL TRABAJADOR -->
+        <div id="tabContentRanking" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Columna izquierda: Tabla de Ranking (7 cols) -->
+          <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-[#1c2b64]">Tabla de Posiciones (Mejores Evaluados)</h3>
+                <p class="text-xs text-slate-500">Selecciona a un trabajador para ver su perfil detallado</p>
+              </div>
+              <input id="searchWorkerInput" type="search" placeholder="Buscar por nombre o área..." class="rounded-xl border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#1c2b64]" />
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-[#1c2b64] text-[11px] font-semibold uppercase text-white">
+                    <th class="py-3 px-3">Pos.</th>
+                    <th class="py-3 px-3">Trabajador</th>
+                    <th class="py-3 px-3">Rol / Área</th>
+                    <th class="py-3 px-3 text-center">Evaluaciones</th>
+                    <th class="py-3 px-3 text-right">Promedio</th>
+                  </tr>
+                </thead>
+                <tbody id="rankingTableBody" class="divide-y divide-slate-200 text-xs">
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Gráfica comparativa general -->
+            <div class="p-4 border-t border-slate-200 mt-auto">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-[#1c2b64] mb-3">Comparativa de Promedios por Personal</h4>
+              <div class="relative h-56">
+                <canvas id="rankingBarChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna derecha: Ficha de Perfil Detallado (5 cols) -->
+          <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col">
+            <div class="flex items-start justify-between gap-3 pb-4 border-b border-slate-200">
+              <div class="flex items-center gap-3">
+                <div id="profileAvatar" class="w-14 h-14 rounded-2xl bg-[#1c2b64] text-white flex items-center justify-center text-lg font-bold shadow border-b-2 border-[#f96a0e]">
+                  LH
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span id="profileIdBadge" class="text-[11px] font-mono bg-slate-100 text-[#1c2b64] px-2 py-0.5 rounded font-semibold">SEC-01</span>
+                    <span id="profileRoleBadge" class="text-[11px] bg-[#f96a0e]/10 text-[#f96a0e] px-2 py-0.5 rounded font-semibold">Secretaria</span>
+                  </div>
+                  <h3 id="profileName" class="text-base font-bold text-[#1c2b64] mt-1">Laura Hernández Gómez</h3>
+                  <p id="profileArea" class="text-xs text-slate-500">Ventanilla de Trámites</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <span id="profileOverallScore" class="text-2xl font-extrabold text-[#1c2b64]">5.00</span>
+                <span class="block text-[11px] text-slate-400" id="profileTotalReviews">1 evaluación</span>
+              </div>
+            </div>
+
+            <!-- Desglose de los 3 rubros -->
+            <div class="grid grid-cols-3 gap-2 my-4">
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-center">
+                <span class="text-[11px] text-slate-500 block">Trato</span>
+                <span id="profileMetricTrato" class="text-base font-bold text-[#1c2b64]">5.0 ★</span>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-center">
+                <span class="text-[11px] text-slate-500 block">Claridad</span>
+                <span id="profileMetricClaridad" class="text-base font-bold text-[#1c2b64]">5.0 ★</span>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-center">
+                <span class="text-[11px] text-slate-500 block">Rapidez</span>
+                <span id="profileMetricRapidez" class="text-base font-bold text-[#1c2b64]">5.0 ★</span>
+              </div>
+            </div>
+
+            <!-- Gráfica de desglose del perfil -->
+            <div class="mb-4">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-[#1c2b64] mb-2">Desempeño por Criterio (1 a 5)</h4>
+              <div class="relative h-44">
+                <canvas id="profileRadarChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Comentarios recibidos -->
+            <div class="flex-1 flex flex-col">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-[#1c2b64]">Comentarios de Alumnos</h4>
+                <button id="btnTestWorkerQR" type="button" class="text-[11px] text-[#f96a0e] hover:underline font-semibold">
+                  📱 Abrir encuesta QR →
+                </button>
+              </div>
+              <div id="profileCommentsList" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: CATÁLOGO DE PERSONAL Y GENERADOR DE QRs IMPRIMIBLES -->
+        <div id="tabContentQrs" class="hidden space-y-6">
+          <!-- Alta de personal -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm no-print">
+            <h3 class="text-sm font-bold text-[#1c2b64] mb-1">Dar de Alta Nuevo Académico o Secretaria</h3>
+            <p class="text-xs text-slate-500 mb-4">Se guarda automáticamente en la pestaña <code class="bg-slate-100 px-1.5 py-0.5 rounded">Personal</code> de tu Google Sheets y genera su QR único.</p>
+            <form id="addWorkerForm" class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">ID Único (Ej. SEC-03)</label>
+                <input id="newWorkerId" type="text" required placeholder="ACAD-03" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1c2b64]" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nombre Completo con Grado</label>
+                <input id="newWorkerName" type="text" required placeholder="Mtro. Roberto Sánchez Vega" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1c2b64]" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Rol</label>
+                <select id="newWorkerRole" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#1c2b64]">
+                  <option value="Secretaria">Secretaria</option>
+                  <option value="Académico">Académico</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Área / Cubículo</label>
+                <div class="flex gap-2">
+                  <input id="newWorkerArea" type="text" required placeholder="Cubículo 8" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1c2b64]" />
+                  <button type="submit" class="px-3.5 py-2 rounded-xl bg-[#f96a0e] hover:bg-[#e05b07] text-white text-xs font-semibold shrink-0 transition">
+                    + Agregar
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Configuración discreta de dominio para QRs impresos -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3 no-print">
+            <div class="flex-1 min-w-[240px]">
+              <label for="inputBaseSiteUrl" class="block text-xs font-bold text-[#1c2b64] mb-1">URL del sitio web para los códigos QR impresos:</label>
+              <div class="flex gap-2">
+                <input id="inputBaseSiteUrl" type="url" class="flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#1c2b64]" placeholder="https://tu-usuario.github.io/evaluacion-calmecac/" />
+                <button id="btnUpdateSiteUrl" type="button" class="px-3.5 py-1.5 rounded-xl bg-[#1c2b64] hover:bg-[#15214f] text-white text-xs font-semibold transition">
+                  Actualizar QRs
+                </button>
+              </div>
+            </div>
+            <button id="btnPrintAllQRs" type="button" class="px-4 py-2 rounded-xl bg-[#f96a0e] hover:bg-[#e05b07] text-white text-xs font-semibold transition shadow-sm">
+              🖨️ Imprimir Tarjetas QR
+            </button>
+          </div>
+
+          <div id="qrCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          </div>
+        </div>
+
+        <!-- TAB 3: BITÁCORA COMPLETA DE EVALUACIONES -->
+        <div id="tabContentBitacora" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-[#1c2b64]">Historial Completo de Evaluaciones Registradas</h3>
+              <p class="text-xs text-slate-500">Registros sincronizados con la hoja de cálculo institucional</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-[#1c2b64] text-[11px] font-semibold uppercase text-white">
+                  <th class="py-3 px-3">Fecha</th>
+                  <th class="py-3 px-3">ID</th>
+                  <th class="py-3 px-3">Personal Evaluado</th>
+                  <th class="py-3 px-3">Trámite</th>
+                  <th class="py-3 px-3 text-center">Trato</th>
+                  <th class="py-3 px-3 text-center">Claridad</th>
+                  <th class="py-3 px-3 text-center">Rapidez</th>
+                  <th class="py-3 px-3 text-center">Promedio</th>
+                  <th class="py-3 px-3">Comentario del Alumno</th>
+                </tr>
+              </thead>
+              <tbody id="logTableBody" class="divide-y divide-slate-200 text-xs">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // =========================================================================
+    // CONFIGURACIÓN Y ESTADO PRINCIPAL (UNIVERSIDAD CALMECAC)
+    // =========================================================================
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuwJphM-XsvfReGKTTRHhsmBXhH0zrZN9lxfC5YaoR30mOeXxuetSdonHrg_RDtDxWkg/exec";
+
+    const state = {
+      scriptUrl: SCRIPT_URL,
+      baseSiteUrl: "",
+      currentView: "admin", // Si viene ?id= en la URL cambia automáticamente a "student"
+      isAdminPreview: false,
+      selectedQrWorkerId: "SEC-01",
+      selectedProfileWorkerId: "SEC-01",
+      loggedUser: null,
+      loggedPass: "",
+      scoresForm: { trato: 5, claridad: 5, rapidez: 5 },
+      personal: [
+        { id: "SEC-01", nombre: "Laura Hernández Gómez", rol: "Secretaria", area: "Ventanilla de Trámites", activo: "SI" },
+        { id: "SEC-02", nombre: "Patricia Morales Ruiz", rol: "Secretaria", area: "Control Escolar", activo: "SI" },
+        { id: "ACAD-01", nombre: "Dr. Carlos Ramírez Soto", rol: "Académico", area: "Coordinación y Tutorías", activo: "SI" },
+        { id: "ACAD-02", nombre: "Mtra. Elena Vargas Díaz", rol: "Académico", area: "Jefatura de Carrera", activo: "SI" }
+      ],
+      evaluaciones: [
+        { fecha: "2026-11-15 10:14", id_personal: "SEC-01", nombre_personal: "Laura Hernández Gómez", tipo_tramite: "Constancia / Kárdex", trato: 5, claridad: 5, rapidez: 5, promedio: 5.00, comentario: "Excelente trato, muy rápida la atención en ventanilla." },
+        { fecha: "2026-11-16 12:30", id_personal: "SEC-01", nombre_personal: "Laura Hernández Gómez", tipo_tramite: "Entrega o Recepción de Documentos", trato: 5, claridad: 5, rapidez: 4, promedio: 4.67, comentario: "Muy amable y me revisó todos los documentos con paciencia." },
+        { fecha: "2026-11-16 09:45", id_personal: "SEC-02", nombre_personal: "Patricia Morales Ruiz", tipo_tramite: "Inscripción / Horarios", trato: 4, claridad: 5, rapidez: 4, promedio: 4.33, comentario: "Todo claro, solo había un poco de fila." },
+        { fecha: "2026-11-16 11:20", id_personal: "ACAD-01", nombre_personal: "Dr. Carlos Ramírez Soto", tipo_tramite: "Asesoría Académica / Tutoría", trato: 5, claridad: 5, rapidez: 5, promedio: 5.00, comentario: "Me explicó paso a paso el proceso de titulación." },
+        { fecha: "2026-11-17 08:50", id_personal: "ACAD-02", nombre_personal: "Mtra. Elena Vargas Díaz", tipo_tramite: "Titulación / Servicio Social", trato: 5, claridad: 4, rapidez: 4, promedio: 4.33, comentario: "Resolvieron mi duda sobre liberación de servicio social." }
+      ]
+    };
+
+    let barChartInstance = null;
+    let radarChartInstance = null;
+
+    function detectBaseSiteUrl() {
+      try {
+        const saved = localStorage.getItem("calmecac_base_site_url");
+        if (saved) return saved;
+      } catch (e) {}
+      if (window.location.protocol.startsWith("http")) {
+        return window.location.origin + window.location.pathname;
+      }
+      return "https://calmecac.edu.mx/evaluacion/";
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById("toastContainer");
+      const icon = document.getElementById("toastIcon");
+      const text = document.getElementById("toastMessage");
+      icon.textContent = isError ? "⚠️" : "✓";
+      icon.className = isError ? "text-amber-400 font-bold" : "text-[#f96a0e] font-bold";
+      text.textContent = msg;
+      toast.classList.remove("hidden");
+      setTimeout(() => toast.classList.add("hidden"), 3800);
+    }
+
+    function getInitials(name) {
+      const parts = String(name || "UC").replace(/^(Dr\.|Dra\.|Mtro\.|Mtra\.|Lic\.|Ing\.)\s*/i, "").trim().split(/\s+/);
+      return ((parts[0] ? parts[0][0] : "U") + (parts[1] ? parts[1][0] : "C")).toUpperCase();
+    }
+
+    function scoreDescription(val) {
+      const map = {
+        1: "1 / 5 Muy malo",
+        2: "2 / 5 Regular",
+        3: "3 / 5 Aceptable",
+        4: "4 / 5 Muy bueno",
+        5: "5 / 5 Excelente"
+      };
+      return map[val] || "5 / 5 Excelente";
+    }
+
+    // =========================================================================
+    // VISTA DEL ALUMNO (QR)
+    // =========================================================================
+    async function loadWorkerFromSheetsIfNeeded(workerId) {
+      const cleanId = workerId.trim().toUpperCase();
+      state.selectedQrWorkerId = cleanId;
+      const localMatch = state.personal.find(p => p.id === cleanId);
+      if (localMatch) {
+        renderStudentView();
+      }
+      if (state.scriptUrl) {
+        try {
+          const res = await fetch(`${state.scriptUrl}?action=getWorker&id=${encodeURIComponent(cleanId)}`);
+          const data = await res.json();
+          if (data && data.ok && data.worker) {
+            const idx = state.personal.findIndex(p => p.id === data.worker.id);
+            if (idx >= 0) state.personal[idx] = data.worker;
+            else state.personal.push(data.worker);
+            state.selectedQrWorkerId = data.worker.id;
+            renderStudentView();
+          }
+        } catch (e) {}
+      }
+    }
+
+    function renderStudentView() {
+      const worker = state.personal.find(p => p.id === state.selectedQrWorkerId) || state.personal[0];
+      if (!worker) return;
+
+      document.getElementById("studentWorkerIdBadge").textContent = worker.id;
+      document.getElementById("studentWorkerAvatar").textContent = getInitials(worker.nombre);
+      document.getElementById("studentWorkerName").textContent = worker.nombre;
+      document.getElementById("studentWorkerRoleArea").textContent = `${worker.rol} • ${worker.area}`;
+
+      const banner = document.getElementById("adminPreviewBanner");
+      banner.classList.toggle("hidden", !state.isAdminPreview);
+
+      renderRatingButtons();
+    }
+
+    function renderRatingButtons() {
+      ["trato", "claridad", "rapidez"].forEach(group => {
+        const currentVal = state.scoresForm[group];
+        const container = document.querySelector(`[data-rating-group="${group}"]`);
+        if (!container) return;
+        container.querySelectorAll("button").forEach(btn => {
+          const v = Number(btn.getAttribute("data-val"));
+          if (v <= currentVal) {
+            btn.className = "star-btn flex-1 py-2 rounded-lg border border-[#f96a0e] bg-[#f96a0e] text-white text-sm font-bold shadow-sm";
+          } else {
+            btn.className = "star-btn flex-1 py-2 rounded-lg border border-slate-200 bg-white text-slate-400 text-sm font-bold hover:border-[#f96a0e]";
+          }
+        });
+      });
+
+      document.getElementById("labelScoreTrato").textContent = scoreDescription(state.scoresForm.trato);
+      document.getElementById("labelScoreClaridad").textContent = scoreDescription(state.scoresForm.claridad);
+      document.getElementById("labelScoreRapidez").textContent = scoreDescription(state.scoresForm.rapidez);
+    }
+
+    // =========================================================================
+    // MÉTRICAS Y PANEL DIRECTIVO
+    // =========================================================================
+    function computeWorkerStats() {
+      const roleFilter = document.getElementById("filterRoleSelect").value;
+      const searchQuery = (document.getElementById("searchWorkerInput").value || "").trim().toLowerCase();
+
+      const statsList = state.personal
+        .filter(p => roleFilter === "ALL" || p.rol === roleFilter)
+        .filter(p => !searchQuery || p.nombre.toLowerCase().includes(searchQuery) || p.area.toLowerCase().includes(searchQuery) || p.id.toLowerCase().includes(searchQuery))
+        .map(p => {
+          const evals = state.evaluaciones.filter(ev => ev.id_personal === p.id);
+          const count = evals.length;
+          let sumTrato = 0, sumClaridad = 0, sumRapidez = 0, sumProm = 0;
+          evals.forEach(ev => {
+            sumTrato += Number(ev.trato) || 0;
+            sumClaridad += Number(ev.claridad) || 0;
+            sumRapidez += Number(ev.rapidez) || 0;
+            sumProm += Number(ev.promedio) || 0;
+          });
+          return {
+            ...p,
+            count,
+            avgTrato: count ? (sumTrato / count) : 0,
+            avgClaridad: count ? (sumClaridad / count) : 0,
+            avgRapidez: count ? (sumRapidez / count) : 0,
+            avgGlobal: count ? (sumProm / count) : 0,
+            evals: evals.slice().reverse()
+          };
+        });
+
+      statsList.sort((a, b) => (b.avgGlobal - a.avgGlobal) || (b.count - a.count));
+      return statsList;
+    }
+
+    function renderDashboard() {
+      if (!state.loggedUser) return;
+
+      document.getElementById("loggedRoleBadge").textContent = state.loggedUser.rol;
+      document.getElementById("loggedUserName").textContent = state.loggedUser.nombre;
+      document.getElementById("inputBaseSiteUrl").value = state.baseSiteUrl;
+
+      const stats = computeWorkerStats();
+
+      const allEvals = state.evaluaciones;
+      const totalEvals = allEvals.length;
+      const globalAvg = totalEvals
+        ? (allEvals.reduce((acc, r) => acc + (Number(r.promedio) || 0), 0) / totalEvals).toFixed(2)
+        : "0.00";
+
+      document.getElementById("kpiGlobalAvg").textContent = globalAvg;
+      document.getElementById("kpiTotalEvals").textContent = String(totalEvals);
+      document.getElementById("kpiActiveWorkers").textContent = String(state.personal.length);
+
+      const rankedWithEvals = stats.filter(s => s.count > 0);
+      if (rankedWithEvals.length > 0) {
+        const top = rankedWithEvals[0];
+        document.getElementById("kpiTopWorkerName").textContent = top.nombre;
+        document.getElementById("kpiTopWorkerScore").textContent = `${top.avgGlobal.toFixed(2)} ★ (${top.count} eval.) • ${top.rol}`;
+      } else {
+        document.getElementById("kpiTopWorkerName").textContent = "Sin evaluaciones en este filtro";
+        document.getElementById("kpiTopWorkerScore").textContent = "—";
+      }
+
+      const tbody = document.getElementById("rankingTableBody");
+      tbody.innerHTML = stats.map((w, idx) => {
+        const isSelected = w.id === state.selectedProfileWorkerId;
+        const medal = idx === 0 ? "🥇 1°" : idx === 1 ? "🥈 2°" : idx === 2 ? "🥉 3°" : `${idx + 1}°`;
+        const badgeColor = w.avgGlobal >= 4.5
+          ? "bg-emerald-100 text-emerald-800"
+          : w.avgGlobal >= 3.8
+          ? "bg-amber-100 text-amber-800"
+          : w.count === 0
+          ? "bg-slate-100 text-slate-500"
+          : "bg-rose-100 text-rose-700";
+
+        return `
+          <tr data-worker-row="${w.id}" class="cursor-pointer transition ${isSelected ? "bg-[#1c2b64]/5 border-l-4 border-l-[#f96a0e] font-medium" : "hover:bg-slate-50"}">
+            <td class="py-3 px-3 font-bold text-[#1c2b64]">${medal}</td>
+            <td class="py-3 px-3">
+              <div class="font-semibold text-slate-900">${w.nombre}</div>
+              <div class="text-[11px] font-mono text-slate-400">${w.id}</div>
+            </td>
+            <td class="py-3 px-3">
+              <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded bg-[#1c2b64]/10 text-[#1c2b64]">${w.rol}</span>
+              <div class="text-[11px] text-slate-500 mt-0.5">${w.area}</div>
+            </td>
+            <td class="py-3 px-3 text-center font-semibold text-slate-700">${w.count}</td>
+            <td class="py-3 px-3 text-right">
+              <span class="inline-block px-2.5 py-1 rounded-lg font-bold ${badgeColor}">
+                ${w.count ? w.avgGlobal.toFixed(2) + " ★" : "S/E"}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      tbody.querySelectorAll("[data-worker-row]").forEach(row => {
+        row.addEventListener("click", () => {
+          state.selectedProfileWorkerId = row.getAttribute("data-worker-row");
+          renderDashboard();
+        });
+      });
+
+      renderWorkerProfile(stats);
+      renderRankingChart(stats);
+      renderQrCardsGrid();
+      renderBitacoraTable();
+    }
+
+    function renderWorkerProfile(stats) {
+      let current = stats.find(s => s.id === state.selectedProfileWorkerId) || stats[0];
+      if (!current) return;
+      state.selectedProfileWorkerId = current.id;
+
+      document.getElementById("profileAvatar").textContent = getInitials(current.nombre);
+      document.getElementById("profileIdBadge").textContent = current.id;
+      document.getElementById("profileRoleBadge").textContent = current.rol;
+      document.getElementById("profileName").textContent = current.nombre;
+      document.getElementById("profileArea").textContent = current.area;
+      document.getElementById("profileOverallScore").textContent = current.count ? `${current.avgGlobal.toFixed(2)} ★` : "S/E";
+      document.getElementById("profileTotalReviews").textContent = `${current.count} ${current.count === 1 ? "evaluación recibida" : "evaluaciones recibidas"}`;
+
+      document.getElementById("profileMetricTrato").textContent = current.count ? `${current.avgTrato.toFixed(1)} ★` : "—";
+      document.getElementById("profileMetricClaridad").textContent = current.count ? `${current.avgClaridad.toFixed(1)} ★` : "—";
+      document.getElementById("profileMetricRapidez").textContent = current.count ? `${current.avgRapidez.toFixed(1)} ★` : "—";
+
+      const commentsContainer = document.getElementById("profileCommentsList");
+      if (current.evals.length === 0) {
+        commentsContainer.innerHTML = `<div class="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-xl border border-slate-200">Aún no hay evaluaciones registradas para este trabajador.</div>`;
+      } else {
+        commentsContainer.innerHTML = current.evals.map(ev => `
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-semibold text-[#1c2b64]">${ev.tipo_tramite}</span>
+              <span class="font-bold text-[#f96a0e]">${Number(ev.promedio).toFixed(2)} ★</span>
+            </div>
+            <p class="text-xs text-slate-700">${ev.comentario ? `"${ev.comentario}"` : "<span class='italic text-slate-400'>Sin comentario escrito</span>"}</p>
+            <div class="text-[10px] text-slate-400 flex justify-between pt-0.5">
+              <span>Trato: ${ev.trato} • Claridad: ${ev.claridad} • Rapidez: ${ev.rapidez}</span>
+              <span>${String(ev.fecha).slice(0, 16)}</span>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      const ctxRadar = document.getElementById("profileRadarChart").getContext("2d");
+      if (radarChartInstance) radarChartInstance.destroy();
+      radarChartInstance = new Chart(ctxRadar, {
+        type: "bar",
+        data: {
+          labels: ["Trato", "Claridad", "Rapidez"],
+          datasets: [{
+            label: current.nombre,
+            data: [
+              Number(current.avgTrato.toFixed(2)),
+              Number(current.avgClaridad.toFixed(2)),
+              Number(current.avgRapidez.toFixed(2))
+            ],
+            backgroundColor: ["#1c2b64", "#2c418f", "#f96a0e"],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+
+    function renderRankingChart(stats) {
+      const ctxBar = document.getElementById("rankingBarChart").getContext("2d");
+      if (barChartInstance) barChartInstance.destroy();
+      barChartInstance = new Chart(ctxBar, {
+        type: "bar",
+        data: {
+          labels: stats.map(s => s.nombre.split(" ").slice(0, 2).join(" ")),
+          datasets: [{
+            label: "Promedio General (1-5)",
+            data: stats.map(s => Number(s.avgGlobal.toFixed(2))),
+            backgroundColor: stats.map(s => s.id === state.selectedProfileWorkerId ? "#f96a0e" : "#1c2b64"),
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+
+    function renderQrCardsGrid() {
+      const grid = document.getElementById("qrCardsGrid");
+      const base = state.baseSiteUrl.replace(/\?.*$/, "");
+      grid.innerHTML = state.personal.map(p => {
+        const qrUrl = `${base}?id=${encodeURIComponent(p.id)}`;
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col items-center text-center border-t-4 border-t-[#1c2b64]">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-[#f96a0e] mb-1">Universidad Calmecac</span>
+            <span class="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded bg-[#1c2b64]/10 text-[#1c2b64] mb-1">${p.id} • ${p.rol}</span>
+            <h4 class="text-sm font-bold text-[#1c2b64]">${p.nombre}</h4>
+            <p class="text-xs text-slate-500 mb-3">${p.area}</p>
+            <div id="qrBox_${p.id}" class="p-3 bg-white border border-slate-200 rounded-xl my-1 flex items-center justify-center"></div>
+            <p class="text-[10px] font-mono text-slate-400 break-all mt-2 px-2">${qrUrl}</p>
+            <button type="button" data-simulate-qr="${p.id}" class="mt-3 w-full py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-[#1c2b64] hover:text-white text-[#1c2b64] text-xs font-semibold transition no-print">
+              📱 Probar encuesta QR
+            </button>
+          </div>
+        `;
+      }).join("");
+
+      state.personal.forEach(p => {
+        const box = document.getElementById(`qrBox_${p.id}`);
+        if (box && window.QRCode) {
+          box.innerHTML = "";
+          new QRCode(box, {
+            text: `${base}?id=${encodeURIComponent(p.id)}`,
+            width: 132,
+            height: 132,
+            colorDark: "#1c2b64",
+            colorLight: "#ffffff"
+          });
+        }
+      });
+
+      grid.querySelectorAll("[data-simulate-qr]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.selectedQrWorkerId = btn.getAttribute("data-simulate-qr");
+          state.isAdminPreview = true;
+          switchMainView("student");
+        });
+      });
+    }
+
+    function renderBitacoraTable() {
+      const tbody = document.getElementById("logTableBody");
+      const rows = state.evaluaciones.slice().reverse();
+      tbody.innerHTML = rows.map(r => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${String(r.fecha).slice(0, 16)}</td>
+          <td class="py-2.5 px-3 font-mono font-semibold text-[#1c2b64]">${r.id_personal}</td>
+          <td class="py-2.5 px-3 font-medium text-slate-900">${r.nombre_personal}</td>
+          <td class="py-2.5 px-3 text-slate-600">${r.tipo_tramite}</td>
+          <td class="py-2.5 px-3 text-center">${r.trato}</td>
+          <td class="py-2.5 px-3 text-center">${r.claridad}</td>
+          <td class="py-2.5 px-3 text-center">${r.rapidez}</td>
+          <td class="py-2.5 px-3 text-center font-bold text-[#f96a0e]">${Number(r.promedio).toFixed(2)} ★</td>
+          <td class="py-2.5 px-3 text-slate-600">${r.comentario || "—"}</td>
+        </tr>
+      `).join("");
+    }
+
+    // =========================================================================
+    // CAMBIO ENTRE VISTAS
+    // =========================================================================
+    function switchMainView(viewName) {
+      state.currentView = viewName;
+      const studentEl = document.getElementById("studentView");
+      const adminEl = document.getElementById("adminSection");
+
+      if (viewName === "student") {
+        studentEl.classList.remove("hidden");
+        adminEl.classList.add("hidden");
+        document.getElementById("evaluationForm").classList.remove("hidden");
+        document.getElementById("studentThankYou").classList.add("hidden");
+        renderStudentView();
+      } else {
+        studentEl.classList.add("hidden");
+        adminEl.classList.remove("hidden");
+        if (state.loggedUser) {
+          document.getElementById("adminLoginView").classList.add("hidden");
+          document.getElementById("adminDashboardView").classList.remove("hidden");
+          renderDashboard();
+        } else {
+          document.getElementById("adminLoginView").classList.remove("hidden");
+          document.getElementById("adminDashboardView").classList.add("hidden");
+        }
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      state.baseSiteUrl = detectBaseSiteUrl();
+
+      // Si la URL tiene ?id=... abre automáticamente la encuesta bloqueada para el alumno
+      const params = new URLSearchParams(window.location.search);
+      const urlWorkerId = params.get("id");
+      if (urlWorkerId) {
+        state.isAdminPreview = false;
+        switchMainView("student");
+        loadWorkerFromSheetsIfNeeded(urlWorkerId);
+      } else {
+        switchMainView("admin");
+      }
+
+      // Volver al panel desde la vista previa QR (solo si el directivo estaba logueado)
+      document.getElementById("btnReturnToAdmin").addEventListener("click", () => {
+        state.isAdminPreview = false;
+        switchMainView("admin");
+      });
+
+      // Estrellas de calificación en el formulario del alumno
+      document.querySelectorAll("[data-rating-group]").forEach(groupEl => {
+        const groupName = groupEl.getAttribute("data-rating-group");
+        groupEl.querySelectorAll("button").forEach(btn => {
+          btn.addEventListener("click", () => {
+            state.scoresForm[groupName] = Number(btn.getAttribute("data-val"));
+            renderRatingButtons();
+          });
+        });
+      });
+
+      // Envío de evaluación del alumno
+      document.getElementById("evaluationForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const worker = state.personal.find(p => p.id === state.selectedQrWorkerId) || state.personal[0];
+        const tramite = document.getElementById("inputTramite").value;
+        const comentario = document.getElementById("inputComentario").value.trim();
+        const trato = state.scoresForm.trato;
+        const claridad = state.scoresForm.claridad;
+        const rapidez = state.scoresForm.rapidez;
+        const promedio = Number(((trato + claridad + rapidez) / 3).toFixed(2));
+
+        const btnSubmit = document.getElementById("btnSubmitEval");
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = "Registrando evaluación...";
+
+        const nuevaEval = {
+          fecha: new Date().toISOString().replace("T", " ").slice(0, 16),
+          id_personal: worker.id,
+          nombre_personal: worker.nombre,
+          tipo_tramite: tramite,
+          trato,
+          claridad,
+          rapidez,
+          promedio,
+          comentario
+        };
+
+        try {
+          await fetch(state.scriptUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "submitEvaluation",
+              id_personal: worker.id,
+              tipo_tramite: tramite,
+              trato,
+              claridad,
+              rapidez,
+              comentario
+            })
+          });
+          showToast("Evaluación registrada correctamente");
+        } catch (err) {
+          showToast("No se pudo conectar al servidor, verifica tu conexión", true);
+        }
+
+        state.evaluaciones.push(nuevaEval);
+        state.selectedProfileWorkerId = worker.id;
+
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = "Enviar Evaluación Anónima";
+        document.getElementById("inputComentario").value = "";
+        document.getElementById("thankYouWorkerName").textContent = `${worker.nombre} (${worker.id})`;
+        document.getElementById("evaluationForm").classList.add("hidden");
+        document.getElementById("studentThankYou").classList.remove("hidden");
+      });
+
+      document.getElementById("btnResetForm").addEventListener("click", () => {
+        state.scoresForm = { trato: 5, claridad: 5, rapidez: 5 };
+        renderRatingButtons();
+        document.getElementById("evaluationForm").classList.remove("hidden");
+        document.getElementById("studentThankYou").classList.add("hidden");
+      });
+
+      // Login al Panel Directivo
+      document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const u = document.getElementById("loginUser").value.trim().toLowerCase();
+        const p = document.getElementById("loginPass").value.trim();
+        const errEl = document.getElementById("loginErrorMsg");
+        errEl.classList.add("hidden");
+
+        const btn = document.getElementById("btnLoginSubmit");
+        btn.disabled = true;
+        btn.textContent = "Verificando credenciales...";
+
+        try {
+          const res = await fetch(state.scriptUrl, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "loginDashboard", usuario: u, password: p })
+          });
+          const data = await res.json();
+          btn.disabled = false;
+          btn.textContent = "Ingresar al Sistema";
+
+          if (data && data.ok) {
+            state.loggedUser = data.user;
+            state.loggedPass = p;
+            if (Array.isArray(data.personal) && data.personal.length) state.personal = data.personal;
+            if (Array.isArray(data.evaluaciones)) state.evaluaciones = data.evaluaciones;
+            showToast(`Bienvenido, ${data.user.nombre}`);
+            switchMainView("admin");
+            return;
+          } else {
+            errEl.textContent = (data && data.error) || "Usuario o contraseña incorrectos.";
+            errEl.classList.remove("hidden");
+            return;
+          }
+        } catch (err) {
+          btn.disabled = false;
+          btn.textContent = "Ingresar al Sistema";
+        }
+
+        // Respaldo para previsualización local sin conexión externa
+        const localUsers = {
+          director: { pass: "dir2026", rol: "Director", nombre: "Dirección General" },
+          supervisor: { pass: "sup2026", rol: "Supervisor", nombre: "Supervisión Escolar" },
+          tecnico: { pass: "tec2026", rol: "Técnico", nombre: "Soporte Técnico" }
+        };
+
+        if (localUsers[u] && localUsers[u].pass === p) {
+          state.loggedUser = { usuario: u, rol: localUsers[u].rol, nombre: localUsers[u].nombre };
+          state.loggedPass = p;
+          showToast(`Bienvenido, ${localUsers[u].nombre}`);
+          switchMainView("admin");
+        } else {
+          errEl.textContent = "Usuario o contraseña incorrectos.";
+          errEl.classList.remove("hidden");
+        }
+      });
+
+      document.getElementById("btnLogout").addEventListener("click", () => {
+        state.loggedUser = null;
+        state.loggedPass = "";
+        document.getElementById("loginPass").value = "";
+        switchMainView("admin");
+      });
+
+      document.getElementById("filterRoleSelect").addEventListener("change", renderDashboard);
+      document.getElementById("searchWorkerInput").addEventListener("input", renderDashboard);
+
+      document.querySelectorAll(".dash-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const tab = btn.getAttribute("data-dash-tab");
+          document.querySelectorAll(".dash-tab-btn").forEach(b => {
+            b.className = "dash-tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-[#1c2b64]";
+          });
+          btn.className = "dash-tab-btn px-4 py-2.5 text-xs font-semibold rounded-t-xl border-b-2 border-[#f96a0e] text-[#1c2b64] bg-white";
+
+          document.getElementById("tabContentRanking").classList.toggle("hidden", tab !== "ranking");
+          document.getElementById("tabContentQrs").classList.toggle("hidden", tab !== "qrs");
+          document.getElementById("tabContentBitacora").classList.toggle("hidden", tab !== "bitacora");
+        });
+      });
+
+      document.getElementById("btnTestWorkerQR").addEventListener("click", () => {
+        state.selectedQrWorkerId = state.selectedProfileWorkerId;
+        state.isAdminPreview = true;
+        switchMainView("student");
+      });
+
+      document.getElementById("addWorkerForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("newWorkerId").value.trim().toUpperCase();
+        const nombre = document.getElementById("newWorkerName").value.trim();
+        const rol = document.getElementById("newWorkerRole").value;
+        const area = document.getElementById("newWorkerArea").value.trim();
+
+        if (!id || !nombre) return;
+        if (state.personal.some(p => p.id === id)) {
+          showToast(`El ID ${id} ya existe en el catálogo`, true);
+          return;
+        }
+
+        state.personal.push({ id, nombre, rol, area, activo: "SI" });
+
+        try {
+          await fetch(state.scriptUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "addWorker",
+              usuario: state.loggedUser ? state.loggedUser.usuario : "director",
+              password: state.loggedPass,
+              id,
+              nombre,
+              rol,
+              area
+            })
+          });
+        } catch (err) {}
+
+        document.getElementById("newWorkerId").value = "";
+        document.getElementById("newWorkerName").value = "";
+        document.getElementById("newWorkerArea").value = "";
+        showToast(`Trabajador ${nombre} (${id}) agregado`);
+        renderDashboard();
+      });
+
+      document.getElementById("btnUpdateSiteUrl").addEventListener("click", () => {
+        const val = document.getElementById("inputBaseSiteUrl").value.trim();
+        if (!val) return;
+        state.baseSiteUrl = val;
+        try { localStorage.setItem("calmecac_base_site_url", val); } catch (e) {}
+        renderQrCardsGrid();
+        showToast("URL de códigos QR actualizada");
+      });
+
+      document.getElementById("btnPrintAllQRs").addEventListener("click", () => {
+        window.print();
+      });
+
+      document.getElementById("btnExportCSV").addEventListener("click", () => {
+        const headers = ["Fecha_Hora", "ID_Personal", "Nombre_Personal", "Tipo_Tramite", "Trato", "Claridad", "Rapidez", "Promedio", "Comentario"];
+        const csvRows = [
+          headers.join(","),
+          ...state.evaluaciones.map(r => [
+            `"${r.fecha}"`,
+            `"${r.id_personal}"`,
+            `"${String(r.nombre_personal).replace(/"/g, '""')}"`,
+            `"${String(r.tipo_tramite).replace(/"/g, '""')}"`,
+            r.trato,
+            r.claridad,
+            r.rapidez,
+            r.promedio,
+            `"${String(r.comentario || "").replace(/"/g, '""')}"`
+          ].join(","))
+        ];
+        const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "evaluaciones_universidad_calmecac.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("Archivo CSV descargado para Excel");
+      });
+
+      document.getElementById("btnRefreshCloud").addEventListener("click", async () => {
+        try {
+          const res = await fetch(state.scriptUrl, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "loginDashboard",
+              usuario: state.loggedUser ? state.loggedUser.usuario : "director",
+              password: state.loggedPass
+            })
+          });
+          const data = await res.json();
+          if (data && data.ok) {
+            if (Array.isArray(data.personal)) state.personal = data.personal;
+            if (Array.isArray(data.evaluaciones)) state.evaluaciones = data.evaluaciones;
+            renderDashboard();
+            showToast("Datos actualizados desde Google Sheets");
+          }
+        } catch (err) {
+          showToast("No se pudo sincronizar en este entorno de vista previa", true);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
